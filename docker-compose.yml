@@ -1,0 +1,112 @@
+version: "3.9"
+
+# ============================================================
+# Asset Explorer — Docker Compose (local development)
+# ============================================================
+# Runs backend + frontend in mock mode with no external credentials.
+# Production uses OCI Container Instances (see .azure-devops/pipeline.yml).
+#
+# Usage:
+#   docker compose up --build
+#   Open http://localhost:5173 (Vite dev server proxies /api → backend:8000)
+#
+# To run with real credentials, copy .env.example to .env, fill in values,
+# and set MOCK_MODE=false (requires Oracle wallet files in ./wallet/).
+# ============================================================
+
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      # BuildKit must be enabled for --secret mount in production builds.
+      # In local dev with MOCK_MODE=true no private feeds are needed.
+    image: asset-explorer-backend:local
+    container_name: ae-backend
+    environment:
+      - MOCK_MODE=${MOCK_MODE:-true}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production-32chars}
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:80
+      # Oracle (ignored in MOCK_MODE)
+      - DB_DSN=${DB_DSN:-}
+      - DB_WALLET_DIR=/app/wallet
+      - DB_USER=${DB_USER:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_THREAD_WORKERS=${DB_THREAD_WORKERS:-4}
+      # Azure (ignored in MOCK_MODE)
+      - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY:-}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_CHAT_DEPLOYMENT=${AZURE_OPENAI_CHAT_DEPLOYMENT:-gpt-4}
+      - AZURE_OPENAI_EMBED_DEPLOYMENT=${AZURE_OPENAI_EMBED_DEPLOYMENT:-text-embedding-ada-002}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-01}
+      - AZURE_SEARCH_ENDPOINT=${AZURE_SEARCH_ENDPOINT:-}
+      - AZURE_SEARCH_KEY=${AZURE_SEARCH_KEY:-}
+      - AZURE_SEARCH_INDEX=${AZURE_SEARCH_INDEX:-asset-health-index}
+      - AZURE_VISION_ENDPOINT=${AZURE_VISION_ENDPOINT:-}
+      - AZURE_VISION_KEY=${AZURE_VISION_KEY:-}
+      - FULCRUM_API_KEY=${FULCRUM_API_KEY:-}
+      # SAML (ignored in MOCK_MODE — auth bypassed)
+      - SAML_IDP_METADATA_URL=${SAML_IDP_METADATA_URL:-}
+      - SAML_SP_ENTITY_ID=${SAML_SP_ENTITY_ID:-http://localhost:8000}
+      - SAML_ACS_URL=${SAML_ACS_URL:-http://localhost:8000/api/saml/acs}
+      - SAML_SUCCESS_REDIRECT=${SAML_SUCCESS_REDIRECT:-http://localhost:5173}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount wallet directory (only needed when MOCK_MODE=false)
+      - ./wallet:/app/wallet:ro
+      # Hot reload in dev: mount source (Gunicorn --reload)
+      - ./backend:/app:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder    # Use the build stage for dev (serves via Vite dev server)
+    image: asset-explorer-frontend:local
+    container_name: ae-frontend
+    environment:
+      - VITE_MOCK_MODE=${MOCK_MODE:-true}
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      # Hot reload: mount source
+      - ./frontend:/app:ro
+      - /app/node_modules   # Prevent host node_modules override
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    restart: unless-stopped
+
+# ── Profiles ──────────────────────────────────────────────────────────────────
+# Run with Nginx (production-like): docker compose --profile nginx up
+# Serves the built bundle at :80 instead of Vite dev server at :5173.
+
+  frontend-nginx:
+    profiles: ["nginx"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: asset-explorer-frontend-nginx:local
+    container_name: ae-frontend-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health.txt"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped

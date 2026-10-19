@@ -1,0 +1,394 @@
+# Asset Explorer — Azure DevOps CI/CD Pipeline
+# =============================================
+# Stages:
+#   1. Build & Check  — lint, type-check (tsc -b), SonarCloud SAST
+#   2. Container Build — multi-stage Docker images pushed to OCIR by digest
+#   3. Deploy         — blue-green OCI Container Instances deployment
+#
+# Branch strategy:
+#   main  → all three stages (Deploy requires manual approval for prod)
+#   PR    → Build & Check only (no container push, no deploy)
+#
+# Key design decisions:
+#   - Images tagged by Git commit SHA + ADO Build ID (immutable, traceable)
+#   - Deployed by digest (not tag) to prevent tag mutation bugs
+#   - Blue-green: new container created and health-checked BEFORE old is drained
+#   - BuildKit secrets for private npm/pip feeds (never in image layers)
+#   - tsc -b type check fails the build before any deployment attempt
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - "*.md"
+      - "docs/**"
+      - "notebooks/**"
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  # OCI Container Registry
+  OCIR_REGION:    "uk-london-1"
+  OCIR_NAMESPACE: "$(OCIR_NAMESPACE_SECRET)"         # ADO secret variable
+  IMAGE_BACKEND:  "$(OCIR_REGION).ocir.io/$(OCIR_NAMESPACE)/asset-explorer-backend"
+  IMAGE_FRONTEND: "$(OCIR_REGION).ocir.io/$(OCIR_NAMESPACE)/asset-explorer-frontend"
+  IMAGE_TAG:      "$(Build.SourceVersion)-$(Build.BuildId)"
+
+  # OCI deployment targets
+  OCI_COMPARTMENT_ID:      "$(OCI_COMPARTMENT_ID_SECRET)"
+  OCI_AVAILABILITY_DOMAIN: "vLfS:UK-LONDON-1-AD-1"
+  OCI_SUBNET_ID:           "$(OCI_SUBNET_ID_SECRET)"
+
+  # Azure service connection name
+  AZURE_SERVICE_CONNECTION: "asset-explorer-azure-sc"
+
+  # Build config
+  NODE_VERSION:   "20.x"
+  PYTHON_VERSION: "3.11"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 1: Build & Check
+# ─────────────────────────────────────────────────────────────────────────────
+stages:
+- stage: BuildAndCheck
+  displayName: "Build & Check"
+  jobs:
+
+  - job: Frontend
+    displayName: "Frontend — TypeScript check + lint"
+    pool:
+      vmImage: "ubuntu-22.04"
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: "$(NODE_VERSION)"
+      displayName: "Install Node $(NODE_VERSION)"
+
+    - script: npm ci
+      workingDirectory: frontend
+      displayName: "npm ci (clean install)"
+
+    - script: npm run typecheck
+      workingDirectory: frontend
+      displayName: "TypeScript strict type-check (tsc -b --noEmit)"
+      # This is the check that caught the bundle-404 production incident in our
+      # post-mortem: a silent JS type error masked a runtime path mismatch.
+      # tsc -b is mandatory before any container build proceeds.
+
+    - script: npm run lint
+      workingDirectory: frontend
+      displayName: "ESLint"
+
+    - script: npm run build
+      workingDirectory: frontend
+      displayName: "Vite production build (verify bundle compiles)"
+
+  - job: Backend
+    displayName: "Backend — Python type check + tests"
+    pool:
+      vmImage: "ubuntu-22.04"
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: "$(PYTHON_VERSION)"
+      displayName: "Use Python $(PYTHON_VERSION)"
+
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install mypy pytest httpx pytest-asyncio
+      displayName: "Install backend dependencies"
+
+    - script: mypy backend/app --ignore-missing-imports --no-strict-optional
+      displayName: "mypy type check"
+
+    - script: pytest backend/tests/ -v --tb=short
+      displayName: "Unit tests"
+      condition: succeededOrFailed()  # Show test results even if typecheck fails
+
+  - job: SonarCloud
+    displayName: "SonarCloud SAST"
+    dependsOn: [Frontend, Backend]
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    pool:
+      vmImage: "ubuntu-22.04"
+    steps:
+    - task: SonarCloudPrepare@1
+      inputs:
+        SonarCloud:     "$(SONAR_SERVICE_CONNECTION)"
+        organization:   "$(SONAR_ORG)"
+        scannerMode:    "CLI"
+        configMode:     "manual"
+        cliProjectKey:  "asset-explorer"
+        cliSources:     "backend/app,frontend/src"
+        extraProperties: |
+          sonar.python.version=3.11
+          sonar.typescript.lcov.reportPaths=frontend/coverage/lcov.info
+      displayName: "Prepare SonarCloud"
+
+    - task: SonarCloudAnalyze@1
+      displayName: "Run SonarCloud analysis"
+
+    - task: SonarCloudPublish@1
+      inputs:
+        pollingTimeoutSec: "300"
+      displayName: "Publish SonarCloud results"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 2: Container Build
+# ─────────────────────────────────────────────────────────────────────────────
+- stage: ContainerBuild
+  displayName: "Container Build"
+  dependsOn: BuildAndCheck
+  condition: |
+    and(
+      succeeded(),
+      eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    )
+  jobs:
+
+  - job: BuildImages
+    displayName: "Build and push Docker images to OCIR"
+    pool:
+      vmImage: "ubuntu-22.04"
+    steps:
+
+    - task: Docker@2
+      displayName: "Login to OCI Container Registry"
+      inputs:
+        command:             "login"
+        containerRegistry:   "$(OCIR_SERVICE_CONNECTION)"
+
+    # Backend image — BuildKit secret for private pip index
+    - script: |
+        DOCKER_BUILDKIT=1 docker build \
+          --file backend/Dockerfile \
+          --secret id=pip_index_url,env=PIP_INDEX_URL \
+          --tag $(IMAGE_BACKEND):$(IMAGE_TAG) \
+          --tag $(IMAGE_BACKEND):latest \
+          --cache-from $(IMAGE_BACKEND):latest \
+          backend/
+      displayName: "Build backend image (BuildKit + secret)"
+      env:
+        PIP_INDEX_URL: $(PIP_INDEX_URL_SECRET)   # Private feed URL with credentials
+
+    - script: |
+        docker push $(IMAGE_BACKEND):$(IMAGE_TAG)
+        docker push $(IMAGE_BACKEND):latest
+        # Capture immutable digest for deployment — avoids tag mutation risk
+        BACKEND_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $(IMAGE_BACKEND):$(IMAGE_TAG))
+        echo "##vso[task.setvariable variable=BACKEND_DIGEST;isOutput=true]$BACKEND_DIGEST"
+        echo "Backend digest: $BACKEND_DIGEST"
+      name: PushBackend
+      displayName: "Push backend image + capture digest"
+
+    # Frontend image — no private feeds; standard build
+    - script: |
+        DOCKER_BUILDKIT=1 docker build \
+          --file frontend/Dockerfile \
+          --build-arg DYNATRACE_URL=$(DYNATRACE_RUM_URL) \
+          --tag $(IMAGE_FRONTEND):$(IMAGE_TAG) \
+          --tag $(IMAGE_FRONTEND):latest \
+          --cache-from $(IMAGE_FRONTEND):latest \
+          frontend/
+      displayName: "Build frontend image (Node + Nginx)"
+
+    - script: |
+        docker push $(IMAGE_FRONTEND):$(IMAGE_TAG)
+        docker push $(IMAGE_FRONTEND):latest
+        FRONTEND_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $(IMAGE_FRONTEND):$(IMAGE_TAG))
+        echo "##vso[task.setvariable variable=FRONTEND_DIGEST;isOutput=true]$FRONTEND_DIGEST"
+        echo "Frontend digest: $FRONTEND_DIGEST"
+      name: PushFrontend
+      displayName: "Push frontend image + capture digest"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 3: Deploy (Blue-Green to OCI Container Instances)
+# ─────────────────────────────────────────────────────────────────────────────
+- stage: Deploy
+  displayName: "Deploy — Blue-Green (OCI)"
+  dependsOn: ContainerBuild
+  condition: |
+    and(
+      succeeded(),
+      eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    )
+  variables:
+    BACKEND_DIGEST:  $[ stageDependencies.ContainerBuild.BuildImages.outputs['PushBackend.BACKEND_DIGEST'] ]
+    FRONTEND_DIGEST: $[ stageDependencies.ContainerBuild.BuildImages.outputs['PushFrontend.FRONTEND_DIGEST'] ]
+
+  jobs:
+
+  # ── Manual gate for production ──────────────────────────────────────────────
+  - job: ProdApproval
+    displayName: "Production deployment gate"
+    pool: server
+    steps:
+    - task: ManualValidation@0
+      timeoutInMinutes: 60
+      inputs:
+        notifyUsers: "$(PROD_APPROVER_EMAIL)"
+        instructions: |
+          Asset Explorer is ready to deploy to production.
+          Backend digest:  $(BACKEND_DIGEST)
+          Frontend digest: $(FRONTEND_DIGEST)
+          Build:           $(Build.BuildId) @ $(Build.SourceVersion)
+
+          Review SonarCloud and confirm no critical findings before approving.
+      displayName: "Wait for production approval"
+
+  # ── Blue-Green deploy ───────────────────────────────────────────────────────
+  - job: BlueGreenDeploy
+    displayName: "Blue-green container switchover"
+    dependsOn: ProdApproval
+    pool:
+      vmImage: "ubuntu-22.04"
+    steps:
+
+    - task: OciCliInstaller@0
+      displayName: "Install OCI CLI"
+
+    - script: |
+        # Configure OCI CLI with Resource Principal (no key file needed)
+        mkdir -p ~/.oci
+        cat > ~/.oci/config << EOF
+        [DEFAULT]
+        auth=instance_principal
+        EOF
+      displayName: "Configure OCI CLI (Resource Principal)"
+
+    - script: |
+        set -euo pipefail
+        BUILD_ID="$(Build.BuildId)"
+        BLUE_NAME="asset-explorer-backend-${BUILD_ID}"
+
+        echo "=== Creating NEW (blue) backend container ==="
+        NEW_BACKEND_OCID=$(oci container-instances container-instance create \
+          --compartment-id "$(OCI_COMPARTMENT_ID)" \
+          --availability-domain "$(OCI_AVAILABILITY_DOMAIN)" \
+          --shape "CI.Standard.A1.Flex" \
+          --shape-config '{"ocpus":2,"memoryInGBs":8}' \
+          --display-name "$BLUE_NAME" \
+          --containers "[{
+            \"imageUrl\": \"$(BACKEND_DIGEST)\",
+            \"displayName\": \"backend\",
+            \"environmentVariables\": [
+              {\"name\": \"MOCK_MODE\",     \"value\": \"false\"},
+              {\"name\": \"JWT_SECRET\",    \"value\": \"$(JWT_SECRET_SECRET)\"},
+              {\"name\": \"OCI_REGION\",    \"value\": \"$(OCIR_REGION)\"},
+              {\"name\": \"VAULT_ID\",      \"value\": \"$(OCI_VAULT_ID_SECRET)\"},
+              {\"name\": \"AZURE_OPENAI_KEY\",  \"value\": \"$(AZURE_OPENAI_KEY_SECRET)\"},
+              {\"name\": \"AZURE_OPENAI_ENDPOINT\", \"value\": \"$(AZURE_OPENAI_ENDPOINT_SECRET)\"},
+              {\"name\": \"AZURE_SEARCH_ENDPOINT\",  \"value\": \"$(AZURE_SEARCH_ENDPOINT_SECRET)\"},
+              {\"name\": \"AZURE_SEARCH_KEY\",       \"value\": \"$(AZURE_SEARCH_KEY_SECRET)\"}
+            ]
+          }]" \
+          --vnics "[{\"subnetId\": \"$(OCI_SUBNET_ID)\"}]" \
+          --query 'data.id' --raw-output)
+
+        echo "New container OCID: $NEW_BACKEND_OCID"
+        echo "##vso[task.setvariable variable=NEW_BACKEND_OCID]$NEW_BACKEND_OCID"
+
+        echo "=== Waiting for new container to reach ACTIVE state ==="
+        MAX_WAIT=300
+        ELAPSED=0
+        while true; do
+          STATE=$(oci container-instances container-instance get \
+            --container-instance-id "$NEW_BACKEND_OCID" \
+            --query 'data."lifecycle-state"' --raw-output)
+          echo "  State: $STATE (${ELAPSED}s elapsed)"
+          if [ "$STATE" = "ACTIVE" ]; then break; fi
+          if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+            echo "ERROR: Container did not reach ACTIVE within ${MAX_WAIT}s"
+            exit 1
+          fi
+          sleep 10
+          ELAPSED=$((ELAPSED + 10))
+        done
+      displayName: "Create new (blue) container + wait for ACTIVE"
+
+    - script: |
+        set -euo pipefail
+        NEW_IP=$(oci container-instances container-instance get \
+          --container-instance-id "$(NEW_BACKEND_OCID)" \
+          --query 'data.vnics[0]."private-ip"' --raw-output)
+        echo "New container IP: $NEW_IP"
+
+        echo "=== Health check on new container ==="
+        MAX_HEALTH_WAIT=120
+        ELAPSED=0
+        until curl -sf "http://${NEW_IP}:8000/health" > /dev/null; do
+          if [ "$ELAPSED" -ge "$MAX_HEALTH_WAIT" ]; then
+            echo "ERROR: Health check failed after ${MAX_HEALTH_WAIT}s — aborting deploy"
+            # Cleanup failed container
+            oci container-instances container-instance delete \
+              --container-instance-id "$(NEW_BACKEND_OCID)" --force
+            exit 1
+          fi
+          echo "  Health check pending… (${ELAPSED}s)"
+          sleep 5
+          ELAPSED=$((ELAPSED + 5))
+        done
+        echo "=== Health check PASSED ==="
+      displayName: "Health-check new container"
+
+    - script: |
+        set -euo pipefail
+        echo "=== Updating load balancer to route traffic to new container ==="
+        # Update OCI Load Balancer backend set (remove old, add new IP)
+        # This is the atomic cutover — old container still serves until backend removed
+        oci lb backend update \
+          --load-balancer-id "$(OCI_LB_ID_SECRET)" \
+          --backend-set-name "asset-explorer-backend-set" \
+          --backend-name "$(OLD_BACKEND_IP):8000" \
+          --weight 0 \
+          --backup false \
+          --drain true \
+          --offline false 2>/dev/null || echo "Old backend drain skipped (may not exist)"
+
+        NEW_IP=$(oci container-instances container-instance get \
+          --container-instance-id "$(NEW_BACKEND_OCID)" \
+          --query 'data.vnics[0]."private-ip"' --raw-output)
+
+        oci lb backend create \
+          --load-balancer-id "$(OCI_LB_ID_SECRET)" \
+          --backend-set-name "asset-explorer-backend-set" \
+          --ip-address "$NEW_IP" \
+          --port 8000 \
+          --weight 1
+
+        echo "Traffic now routed to new container at $NEW_IP"
+        echo "=== Waiting 30s for in-flight requests to drain ==="
+        sleep 30
+
+        echo "=== Stopping old (green) container ==="
+        if [ -n "$(OLD_BACKEND_OCID)" ]; then
+          oci container-instances container-instance delete \
+            --container-instance-id "$(OLD_BACKEND_OCID)" \
+            --force || echo "Old container already gone"
+          echo "Old container deleted."
+        fi
+      displayName: "Cutover load balancer + drain old container"
+      env:
+        OLD_BACKEND_IP:   $(OLD_BACKEND_IP_SECRET)
+        OLD_BACKEND_OCID: $(OLD_BACKEND_OCID_SECRET)
+
+    - script: |
+        echo "=== Post-deploy smoke test ==="
+        sleep 15  # Allow LB health check cycle
+        STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+          "$(PROD_BACKEND_URL)/health" || echo "000")
+        echo "Health endpoint returned HTTP $STATUS"
+        if [ "$STATUS" != "200" ]; then
+          echo "ERROR: Post-deploy smoke test FAILED (HTTP $STATUS)"
+          exit 1
+        fi
+        echo "=== Deploy SUCCESS ==="
+      displayName: "Post-deploy smoke test"

@@ -1,0 +1,16 @@
+[
+  { "date": "2024-09-01", "avg_score": 71.2, "red_count": 58, "amber_count": 278, "green_count": 651 },
+  { "date": "2024-09-08", "avg_score": 70.8, "red_count": 60, "amber_count": 280, "green_count": 647 },
+  { "date": "2024-09-15", "avg_score": 70.5, "red_count": 61, "amber_count": 282, "green_count": 644 },
+  { "date": "2024-09-22", "avg_score": 70.1, "red_count": 63, "amber_count": 283, "green_count": 641 },
+  { "date": "2024-09-29", "avg_score": 69.6, "red_count": 65, "amber_count": 285, "green_count": 637 },
+  { "date": "2024-10-06", "avg_score": 69.2, "red_count": 67, "amber_count": 285, "green_count": 635 },
+  { "date": "2024-10-13", "avg_score": 68.7, "red_count": 69, "amber_count": 286, "green_count": 632 },
+  { "date": "2024-10-20", "avg_score": 68.3, "red_count": 71, "amber_count": 287, "green_count": 629 },
+  { "date": "2024-10-27", "avg_score": 67.9, "red_count": 73, "amber_count": 288, "green_count": 626 },
+  { "date": "2024-11-03", "avg_score": 67.4, "red_count": 74, "amber_count": 289, "green_count": 624 },
+  { "date": "2024-11-10", "avg_score": 67.1, "red_count": 75, "amber_count": 289, "green_count": 623 },
+  { "date": "2024-11-17", "avg_score": 66.8, "red_count": 76, "amber_count": 290, "green_count": 621 },
+  { "date": "2024-11-24", "avg_score": 66.5, "red_count": 76, "amber_count": 290, "green_count": 621 },
+  { "date": "2024-12-01", "avg_score": 66.2, "red_count": 77, "amber_count": 289, "green_count": 621 }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "wo_id": "WO-2024-0892",
+    "asset_id": "TXF-001",
+    "wo_type": "EMERGENCY",
+    "description": "Overtemperature alarm — hotspot >115°C sustained 4h. Load reduction and thermal inspection required.",
+    "created_date": "2024-11-10",
+    "completion_date": null,
+    "failure_code": "THERMAL-OVERLOAD",
+    "is_open_emergency": true
+  },
+  {
+    "wo_id": "WO-2024-0847",
+    "asset_id": "TXF-001",
+    "wo_type": "EMERGENCY",
+    "description": "Buchholz relay gas alarm. DGA: hydrogen 320ppm (threshold 100ppm). PDC testing scheduled.",
+    "created_date": "2024-10-28",
+    "completion_date": null,
+    "failure_code": "GAS-ALARM-H2",
+    "is_open_emergency": true
+  },
+  {
+    "wo_id": "WO-2024-0761",
+    "asset_id": "TXF-001",
+    "wo_type": "CORRECTIVE",
+    "description": "OLTC contact inspection — arcing marks at positions 7-9. Contacts cleaned and tested.",
+    "created_date": "2024-09-14",
+    "completion_date": "2024-09-21",
+    "failure_code": "OLTC-WEAR",
+    "is_open_emergency": false
+  },
+  {
+    "wo_id": "WO-2024-0612",
+    "asset_id": "TXF-001",
+    "wo_type": "PREVENTIVE",
+    "description": "Annual oil sampling and DGA per IEC 60567. Results borderline — follow-up in 6 months.",
+    "created_date": "2024-06-20",
+    "completion_date": "2024-06-20",
+    "failure_code": null,
+    "is_open_emergency": false
+  },
+  {
+    "wo_id": "WO-2024-0881",
+    "asset_id": "TXF-014",
+    "wo_type": "EMERGENCY",
+    "description": "OTI alarm — winding temp 110°C. Load shed 15% and enhanced monitoring deployed.",
+    "created_date": "2024-11-08",
+    "completion_date": null,
+    "failure_code": "THERMAL-OVERLOAD",
+    "is_open_emergency": true
+  },
+  {
+    "wo_id": "WO-2024-0793",
+    "asset_id": "TXF-014",
+    "wo_type": "CORRECTIVE",
+    "description": "Main tank oil leak at drain valve. Valve replaced, oil topped up, leak test passed.",
+    "created_date": "2024-10-05",
+    "completion_date": "2024-10-07",
+    "failure_code": "OIL-LEAK",
+    "is_open_emergency": false
+  },
+  {
+    "wo_id": "WO-2024-0871",
+    "asset_id": "TXF-056",
+    "wo_type": "EMERGENCY",
+    "description": "HV bushing flashover under rain conditions. Asset isolated. Bushing replacement in progress.",
+    "created_date": "2024-11-09",
+    "completion_date": null,
+    "failure_code": "BUSHING-FAILURE",
+    "is_open_emergency": true
+  },
+  {
+    "wo_id": "WO-2024-0688",
+    "asset_id": "TXF-056",
+    "wo_type": "PREVENTIVE",
+    "description": "Thermographic survey — hot spot on LV bushing connection. Retorqued and thermal re-check passed.",
+    "created_date": "2024-07-30",
+    "completion_date": "2024-07-30",
+    "failure_code": null,
+    "is_open_emergency": false
+  }
+]

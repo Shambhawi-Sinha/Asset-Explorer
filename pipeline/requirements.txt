@@ -1,0 +1,25 @@
+# Pipeline requirements
+# Run: pip install -r pipeline/requirements.txt --break-system-packages
+
+# Data processing
+pandas==2.2.2
+numpy==1.26.4
+scipy==1.14.0
+
+# Azure OpenAI (embeddings + GPT-4)
+openai==1.35.13
+
+# Azure AI Search (vector index)
+azure-search-documents==11.4.0
+azure-core==1.30.2
+
+# Azure AI Vision (defect scoring)
+# Uses httpx directly — azure-cognitiveservices-vision-computervision SDK
+# is deprecated in favour of direct REST calls with the 4.0 API
+httpx==0.27.0
+
+# Image processing (Laplacian sharpness filter)
+opencv-python-headless==4.10.0.82
+
+# Oracle ADB (write scores back)
+oracledb==2.2.1

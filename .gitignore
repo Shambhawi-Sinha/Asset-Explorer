@@ -1,0 +1,113 @@
+# ============================================================
+# Asset Explorer — .gitignore
+# ============================================================
+
+# ── Secrets / Credentials ─────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+
+# OCI wallet files — NEVER commit
+*.pem
+*.ora
+tnsnames.ora
+sqlnet.ora
+*.p12
+*.jks
+wallet/
+*wallet*/
+
+# Azure credentials
+*.json.key
+azure_credentials.json
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.env/
+pip-wheel-metadata/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# mypy / pyright
+.mypy_cache/
+.pyright/
+pyrightconfig.json
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# ── Node / Frontend ───────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript build cache
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# ── Docker ────────────────────────────────────────────────────
+# Don't ignore Dockerfiles, but ignore build artifacts
+*.tar
+.dockerignore  # (tracked — each service has its own)
+
+# ── OS ────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ── IDEs ──────────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log
+logs/
+*.log.*
+
+# ── Temporary / Generated ────────────────────────────────────
+tmp/
+temp/
+.tmp/
+*.bak
+*.backup
+
+# Pipeline artifacts (produced by CI, never sourced)
+.sonarqube/
+sonar-project.properties
+
+# Local OCI config (use Resource Principal in prod)
+~/.oci/
+.oci/

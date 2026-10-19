@@ -1,0 +1,34 @@
+# Asset Explorer — Root requirements (backend runtime)
+# Install: pip install -r requirements.txt --break-system-packages
+#
+# For pipeline batch jobs: see pipeline/requirements.txt
+# For frontend: npm ci (inside frontend/)
+
+# ── Web framework ─────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+gunicorn==22.0.0               # Production process manager
+
+# ── Authentication ────────────────────────────────────────────
+python3-saml==1.16.0           # SAML 2.0 SP implementation
+PyJWT==2.8.0                   # JWT sign / verify (HS256)
+cryptography==42.0.8           # SAML XML signature verification
+
+# ── Oracle Database ───────────────────────────────────────────
+oracledb==2.2.1                # python-oracledb (oracle thin driver, no Instant Client)
+
+# ── Azure OpenAI + AI Search ──────────────────────────────────
+openai==1.35.13
+azure-search-documents==11.4.0
+azure-core==1.30.2
+
+# ── HTTP client (Fulcrum BFF proxy + Vision API) ──────────────
+httpx==0.27.0
+
+# ── Data processing ───────────────────────────────────────────
+pandas==2.2.2
+numpy==1.26.4
+
+# ── Utilities ─────────────────────────────────────────────────
+python-dotenv==1.0.1           # Load .env in local dev
+pydantic==2.7.4                # FastAPI request/response models (already pulled by fastapi)

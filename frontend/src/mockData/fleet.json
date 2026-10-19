@@ -1,0 +1,67 @@
+{
+  "total_assets": 987,
+  "total_substations": 436,
+  "band_counts": {
+    "GREEN": 621,
+    "AMBER": 289,
+    "RED": 77
+  },
+  "top_critical": [
+    {
+      "asset_id": "TXF-001",
+      "asset_name": "Northgate 132kV T1",
+      "substation": "Northgate Primary",
+      "health_score": 22.4,
+      "risk_band": "RED",
+      "has_open_emergency": true
+    },
+    {
+      "asset_id": "TXF-014",
+      "asset_name": "Riverside 66kV T3",
+      "substation": "Riverside Switching",
+      "health_score": 28.1,
+      "risk_band": "RED",
+      "has_open_emergency": true
+    },
+    {
+      "asset_id": "TXF-033",
+      "asset_name": "Harbour 33kV T2",
+      "substation": "Harbour Distribution",
+      "health_score": 31.7,
+      "risk_band": "RED",
+      "has_open_emergency": false
+    },
+    {
+      "asset_id": "TXF-007",
+      "asset_name": "Westfield 132kV T2",
+      "substation": "Westfield Grid",
+      "health_score": 35.2,
+      "risk_band": "RED",
+      "has_open_emergency": false
+    },
+    {
+      "asset_id": "TXF-056",
+      "asset_name": "Central 66kV T1",
+      "substation": "Central Bulk",
+      "health_score": 38.9,
+      "risk_band": "RED",
+      "has_open_emergency": true
+    }
+  ],
+  "health_trend": [
+    { "date": "2024-09-01", "avg_score": 71.2, "red_count": 58 },
+    { "date": "2024-09-08", "avg_score": 70.8, "red_count": 60 },
+    { "date": "2024-09-15", "avg_score": 70.5, "red_count": 61 },
+    { "date": "2024-09-22", "avg_score": 70.1, "red_count": 63 },
+    { "date": "2024-09-29", "avg_score": 69.6, "red_count": 65 },
+    { "date": "2024-10-06", "avg_score": 69.2, "red_count": 67 },
+    { "date": "2024-10-13", "avg_score": 68.7, "red_count": 69 },
+    { "date": "2024-10-20", "avg_score": 68.3, "red_count": 71 },
+    { "date": "2024-10-27", "avg_score": 67.9, "red_count": 73 },
+    { "date": "2024-11-03", "avg_score": 67.4, "red_count": 74 },
+    { "date": "2024-11-10", "avg_score": 67.1, "red_count": 75 },
+    { "date": "2024-11-17", "avg_score": 66.8, "red_count": 76 },
+    { "date": "2024-11-24", "avg_score": 66.5, "red_count": 76 },
+    { "date": "2024-12-01", "avg_score": 66.2, "red_count": 77 }
+  ]
+}

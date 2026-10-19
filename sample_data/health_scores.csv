@@ -1,0 +1,16 @@
+asset_id,asset_name,substation_id,substation_name,voltage_kv,capacity_mva,health_score,risk_band,faa_score,hotspot_temp,overload_ratio,tap_ops_daily,winding_resistance_delta,load_temp_sensitivity,has_open_emergency,open_emergency_count,last_inspection_date,fulcrum_record_id,commissioned_year
+TXF-001,Northgate 132kV T1,SUB-NG01,Northgate Primary,132,90,22.4,RED,0.61,118.3,1.24,42,4.8,0.92,true,2,2024-10-15,mock-NG01-001,1998
+TXF-014,Riverside 66kV T3,SUB-RV03,Riverside Switching,66,45,28.1,RED,0.54,112.7,1.18,38,4.1,0.87,true,1,2024-09-22,mock-RV03-014,2001
+TXF-033,Harbour 33kV T2,SUB-HB02,Harbour Distribution,33,30,31.7,RED,0.48,108.4,1.09,35,3.7,0.81,false,0,2024-11-01,mock-HB02-033,2000
+TXF-007,Westfield 132kV T2,SUB-WF02,Westfield Grid,132,90,35.2,RED,0.44,105.1,1.05,33,3.2,0.78,false,0,2024-10-28,mock-WF02-007,2002
+TXF-056,Central 66kV T1,SUB-CT01,Central Bulk,66,60,38.9,RED,0.41,101.8,1.02,31,2.9,0.74,true,1,2024-11-05,mock-CT01-056,2003
+TXF-042,Airport 33kV T1,SUB-AP01,Airport Zone,33,25,52.3,AMBER,0.28,92.6,0.91,24,2.1,0.61,false,0,2024-10-18,mock-AP01-042,2006
+TXF-088,Industrial Park 66kV T2,SUB-IP02,Industrial Zone North,66,50,58.7,AMBER,0.22,88.3,0.87,21,1.8,0.55,false,0,2024-11-08,mock-IP02-088,2007
+TXF-112,Hospital 33kV T1,SUB-HS01,Healthcare District,33,20,64.1,AMBER,0.17,83.7,0.82,17,1.4,0.47,false,0,2024-10-30,mock-HS01-112,2009
+TXF-145,Tech Hub 66kV T1,SUB-TH01,Technology District,66,55,67.3,AMBER,0.14,80.2,0.78,14,1.1,0.41,false,0,2024-11-06,mock-TH01-145,2010
+TXF-178,Stadium 33kV T2,SUB-ST02,Sports Complex,33,35,69.8,AMBER,0.11,77.5,0.75,12,0.9,0.37,false,0,2024-11-09,mock-ST02-178,2011
+TXF-203,Eastern 132kV T1,SUB-EA01,Eastern Grid,132,90,76.8,GREEN,0.09,72.1,0.74,11,0.8,0.31,false,0,2024-11-10,mock-EA01-203,2012
+TXF-321,Southern 66kV T2,SUB-SO02,Southern Distribution,66,45,82.4,GREEN,0.06,68.4,0.69,8,0.5,0.24,false,0,2024-11-12,mock-SO02-321,2015
+TXF-445,Northern 33kV T3,SUB-NO03,Northern Zone,33,25,88.2,GREEN,0.04,63.9,0.63,6,0.3,0.18,false,0,2024-11-14,mock-NO03-445,2018
+TXF-567,University 66kV T1,SUB-UV01,University Campus,66,40,91.7,GREEN,0.02,61.2,0.59,4,0.2,0.14,false,0,2024-11-15,mock-UV01-567,2020
+TXF-689,Greenfield 33kV T1,SUB-GF01,Greenfield Substation,33,20,94.3,GREEN,0.01,58.6,0.55,3,0.1,0.11,false,0,2024-11-16,mock-GF01-689,2022

@@ -1,0 +1,16 @@
+asset_id,asset_name,substation_id,substation_name,voltage_kv,capacity_mva,manufacturer,model,serial_number,commissioned_year,last_major_overhaul,oil_type,cooling_type,tap_positions,insulation_class
+TXF-001,Northgate 132kV T1,SUB-NG01,Northgate Primary,132,90,ABB,TRATT-132,ABB-1998-08821,1998,2012,Mineral,ONAN/ONAF,17,A
+TXF-014,Riverside 66kV T3,SUB-RV03,Riverside Switching,66,45,Siemens,4AT3,SIE-2001-34521,2001,,Mineral,ONAN,9,A
+TXF-033,Harbour 33kV T2,SUB-HB02,Harbour Distribution,33,30,Schneider,HVPT-33,SCH-2000-22018,2000,2019,Mineral,ONAN,5,A
+TXF-007,Westfield 132kV T2,SUB-WF02,Westfield Grid,132,90,GE,TM132,GE-2002-91034,2002,2014,Mineral,ONAN/ONAF,17,A
+TXF-056,Central 66kV T1,SUB-CT01,Central Bulk,66,60,ABB,TRATT-66,ABB-2003-09215,2003,2017,Mineral,ONAN/ONAF,13,A
+TXF-042,Airport 33kV T1,SUB-AP01,Airport Zone,33,25,Siemens,3AT2,SIE-2006-45891,2006,,FR3 Ester,ONAN,5,B
+TXF-088,Industrial Park 66kV T2,SUB-IP02,Industrial Zone North,66,50,GE,TM66E,GE-2007-112047,2007,,Mineral,ONAN/ONAF,13,A
+TXF-112,Hospital 33kV T1,SUB-HS01,Healthcare District,33,20,Schneider,HVPT-33E,SCH-2009-28901,2009,,FR3 Ester,ONAN,5,B
+TXF-145,Tech Hub 66kV T1,SUB-TH01,Technology District,66,55,ABB,PowerTrans-66,ABB-2010-14421,2010,,FR3 Ester,ONAN/ONAF,13,B
+TXF-178,Stadium 33kV T2,SUB-ST02,Sports Complex,33,35,GE,TM33N,GE-2011-13302,2011,,FR3 Ester,ONAN,5,B
+TXF-203,Eastern 132kV T1,SUB-EA01,Eastern Grid,132,90,Siemens,4AT4-132,SIE-2012-67801,2012,,FR3 Ester,ONAF,17,B
+TXF-321,Southern 66kV T2,SUB-SO02,Southern Distribution,66,45,ABB,PowerTrans-66N,ABB-2015-19034,2015,,FR3 Ester,ONAN,13,B
+TXF-445,Northern 33kV T3,SUB-NO03,Northern Zone,33,25,Schneider,HVPT-33N,SCH-2018-31221,2018,,FR3 Ester,ONAN,5,B
+TXF-567,University 66kV T1,SUB-UV01,University Campus,66,40,GE,TM66N,GE-2020-14889,2020,,Bio-ester,ONAN/ONAF,13,B
+TXF-689,Greenfield 33kV T1,SUB-GF01,Greenfield Substation,33,20,ABB,PowerTrans-33N,ABB-2022-21045,2022,,Bio-ester,ONAN,5,B
